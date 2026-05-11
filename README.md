@@ -1,6 +1,6 @@
 # AirGap-Diffy
 
-Penetration testing triage tool built for Synack Red Team with two modes: visual screenshot deduplication via Perceptual Hashing, and differential HTTP access-control testing for IDOR/BOLA detection. All processing is local — no external API calls, no cloud uploads. 
+Penetration testing triage tool built for Synack Red Team with two modes: visual screenshot deduplication via Perceptual Hashing, and differential HTTP access-control testing for IDOR/BOLA detection. All processing is local, no external API calls, no cloud uploads. 
 
 ---
 
