@@ -11,7 +11,9 @@ import argparse
 import base64
 import difflib
 import hashlib
+import http.server
 import json
+import socketserver
 import sys
 import threading
 import time
@@ -767,6 +769,33 @@ def build_diff_report(
     )
 
 
+# ── Report server ─────────────────────────────────────────────────────────────
+
+def _hyperlink(url: str, text: str) -> str:
+    """OSC 8 ANSI hyperlink — clickable in most modern terminals."""
+    return f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
+
+
+def _serve_report(report_path: Path, port: int) -> None:
+    """Serve the report directory on localhost. Blocks until Ctrl+C."""
+    directory = str(report_path.parent.resolve())
+
+    class _Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=directory, **kwargs)
+        def log_message(self, *args):
+            pass
+
+    class _Server(socketserver.TCPServer):
+        allow_reuse_address = True
+
+    with _Server(("127.0.0.1", port), _Handler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
+
+
 # ── Diff command ──────────────────────────────────────────────────────────────
 
 def load_urls(path: Path) -> List[str]:
@@ -819,20 +848,29 @@ def cmd_diff(args: argparse.Namespace) -> None:
             ): url
             for url in urls
         }
+        alerts: List[str] = []
+        errors: List[str] = []
         with tqdm(total=len(urls), desc="  Testing  ", unit="url", ncols=68,
                   bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]") as bar:
             for fut in as_completed(futures):
                 try:
                     findings = fut.result()
                     all_findings.extend(findings)
-                    hot = [f for f in findings if f.severity in ("CRITICAL", "HIGH")]
-                    for f in hot:
-                        tqdm.write(f"  [!] {f.severity}: {f.test} → {f.url[:72]}")
+                    for f in findings:
+                        if f.severity in ("CRITICAL", "HIGH"):
+                            alerts.append(f"  [!] {f.severity:<8} {f.test} → {f.url}")
                 except Exception as exc:
-                    tqdm.write(f"  [ERR] {exc}")
+                    errors.append(f"  [ERR] {exc}")
                 bar.update(1)
 
     print()
+    for line in alerts:
+        print(line)
+    for line in errors:
+        print(line)
+    if alerts or errors:
+        print()
+
     print("[*] Building diff report…")
     build_diff_report(
         findings=all_findings,
@@ -847,6 +885,8 @@ def cmd_diff(args: argparse.Namespace) -> None:
     for f in all_findings:
         counts[f.severity] = counts.get(f.severity, 0) + 1
 
+    report_url = f"http://localhost:{args.serve_port}/{args.output.name}"
+
     print(f"\n  {'─'*44}")
     print(f"  URLs      : {len(urls)}")
     print(f"  CRITICAL  : {counts['CRITICAL']}")
@@ -854,8 +894,14 @@ def cmd_diff(args: argparse.Namespace) -> None:
     print(f"  MEDIUM    : {counts['MEDIUM']}")
     print(f"  INFO      : {counts['INFO']}")
     print(f"  Elapsed   : {elapsed:.2f}s")
-    print(f"  Report -> {args.output}")
-    print()
+    print(f"  {'─'*44}")
+
+    if not args.no_serve:
+        print(f"\n  Serving on {_hyperlink(report_url, report_url)}")
+        print(f"  Ctrl+C to stop\n")
+        _serve_report(args.output, args.serve_port)
+    else:
+        print(f"  Report -> {args.output}\n")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -933,6 +979,10 @@ sessions.json format:
                     help="Disable SSL certificate verification")
     dp.add_argument("--output", "-o", type=Path, default=Path("diff_report.html"),
                     metavar="PATH", help="Output HTML path")
+    dp.add_argument("--no-serve", action="store_true",
+                    help="Skip auto-hosting the report (just write the file)")
+    dp.add_argument("--serve-port", type=int, default=7771, metavar="PORT",
+                    help="Port to serve the report on (default: 7771)")
 
     return root
 
