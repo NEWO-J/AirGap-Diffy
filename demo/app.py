@@ -148,6 +148,7 @@ def me():
 
 
 if __name__ == "__main__":
-    print("\n  diffy demo app — http://localhost:5000")
-    print("  DO NOT expose outside localhost.\n")
+    import logging
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
+    print("\n  diffy demo app — http://localhost:5000  (Ctrl+C to stop)\n")
     app.run(host="127.0.0.1", port=5000, debug=False)
