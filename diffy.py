@@ -138,44 +138,21 @@ _SCAN_HTML = """\
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Diffy — Scan Report</title>
+<title>Diffy Scan</title>
 <style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{background:#0d1117;color:#c9d1d9;font-family:'Courier New',monospace;padding:28px}}
-  h1{{color:#58a6ff;font-size:1.5rem;margin-bottom:6px}}
-  .meta{{color:#8b949e;font-size:.8rem;margin-bottom:28px;line-height:1.7}}
-  .meta span{{margin-right:18px}}
-  .stats{{display:flex;gap:16px;margin-bottom:36px;flex-wrap:wrap}}
-  .stat{{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 22px;min-width:148px}}
-  .stat-label{{color:#8b949e;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}}
-  .stat-value{{color:#f0f6fc;font-size:1.9rem;font-weight:700;margin-top:4px}}
-  .stat-value.g{{color:#3fb950}}
-  .section-title{{color:#58a6ff;font-size:1rem;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #21262d}}
-  .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}}
-  .card{{background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden;transition:border-color .15s,transform .15s}}
-  .card:hover{{border-color:#58a6ff;transform:translateY(-2px)}}
-  .card img{{width:100%;display:block;object-fit:cover;height:190px;background:#0d1117}}
-  .card-body{{padding:10px 13px 12px}}
-  .card-name{{color:#e6edf3;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-  .card-hash{{color:#8b949e;font-size:.68rem;margin-top:5px;letter-spacing:.03em}}
+  body{{font-family:monospace;max-width:1400px;margin:32px auto;padding:0 20px;color:#111;font-size:13px}}
+  h1{{font-size:1rem;margin-bottom:4px}}
+  .m{{color:#666;margin-bottom:20px}}
+  .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}}
+  .card{{border:1px solid #ddd;overflow:hidden}}
+  .card img{{width:100%;display:block;height:140px;object-fit:cover;background:#f5f5f5}}
+  .card p{{padding:5px 7px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+  .card small{{padding:0 7px 5px;display:block;color:#999}}
 </style>
 </head>
 <body>
-<h1>Diffy &mdash; Scan Report</h1>
-<p class="meta">
-  <span>Generated: {timestamp}</span>
-  <span>Directory: {directory}</span>
-  <span>Threshold: {threshold} bits</span>
-  {masks_meta}
-</p>
-<div class="stats">
-  <div class="stat"><div class="stat-label">Total</div><div class="stat-value">{total}</div></div>
-  <div class="stat"><div class="stat-label">Unique</div><div class="stat-value g">{unique}</div></div>
-  <div class="stat"><div class="stat-label">Redundant</div><div class="stat-value">{redundant}</div></div>
-  <div class="stat"><div class="stat-label">Saved</div><div class="stat-value g">{pct_saved}%</div></div>
-</div>
-<p class="section-title">Unique Screenshots &mdash; {unique} images</p>
+<h1>Diffy &mdash; Scan</h1>
+<p class="m">{timestamp} &middot; {unique}/{total} unique &middot; {pct_saved}% filtered &middot; threshold {threshold}b{masks_meta}</p>
 <div class="grid">
 {cards}
 </div>
@@ -184,13 +161,11 @@ _SCAN_HTML = """\
 """
 
 _SCAN_CARD = (
-    '  <div class="card">\n'
-    '    <img src="data:image/{fmt};base64,{b64}" alt="{name}" loading="lazy">\n'
-    '    <div class="card-body">\n'
-    '      <div class="card-name" title="{name}">{name}</div>\n'
-    '      <div class="card-hash">pHash: {phash}</div>\n'
-    '    </div>\n'
-    '  </div>'
+    '<div class="card">'
+    '<img src="data:image/{fmt};base64,{b64}" alt="{name}" loading="lazy">'
+    '<p title="{name}">{name}</p>'
+    '<small>{phash}</small>'
+    '</div>'
 )
 
 
@@ -206,7 +181,7 @@ def build_scan_report(
 ) -> None:
     pct_saved = round(redundant_count / total * 100) if total else 0
     masks_meta = (
-        f'<span>Masks: {"; ".join(str(m) for m in masks)}</span>' if masks else ""
+        f' &middot; masks: {"; ".join(str(m) for m in masks)}' if masks else ""
     )
     cards = []
     for p in unique_paths:
@@ -573,75 +548,48 @@ _DIFF_HTML = """\
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Diffy — Diff Report</title>
+<title>Diffy Diff</title>
 <style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{background:#0d1117;color:#c9d1d9;font-family:'Courier New',monospace;padding:28px}}
-  h1{{color:#58a6ff;font-size:1.5rem;margin-bottom:6px}}
-  .meta{{color:#8b949e;font-size:.8rem;margin-bottom:28px;line-height:1.7}}
-  .meta span{{margin-right:18px}}
-  .stats{{display:flex;gap:16px;margin-bottom:36px;flex-wrap:wrap}}
-  .stat{{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px 22px;min-width:130px}}
-  .stat-label{{color:#8b949e;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}}
-  .stat-value{{font-size:1.9rem;font-weight:700;margin-top:4px}}
-  .crit{{color:#f85149}} .high{{color:#e3b341}} .med{{color:#58a6ff}}
-  .info{{color:#8b949e}} .ok{{color:#3fb950}}
-  .section-title{{color:#58a6ff;font-size:1rem;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #21262d}}
-  details.finding{{background:#161b22;border:1px solid #30363d;border-radius:8px;margin-bottom:10px;overflow:hidden}}
-  details.finding summary{{list-style:none;display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;flex-wrap:wrap}}
-  details.finding summary::-webkit-details-marker{{display:none}}
-  details.finding summary:hover{{background:#1c2128}}
-  .badge{{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.05em;white-space:nowrap}}
-  .badge-CRITICAL{{background:#f85149;color:#fff}}
-  .badge-HIGH{{background:#e3b341;color:#000}}
-  .badge-MEDIUM{{background:#1f6feb;color:#fff}}
-  .badge-INFO{{background:#21262d;color:#8b949e}}
-  .f-url{{color:#e6edf3;font-size:.82rem;flex:1;word-break:break-all}}
-  .f-meta{{color:#8b949e;font-size:.75rem;white-space:nowrap}}
-  .f-body{{padding:0 16px 16px;border-top:1px solid #21262d}}
-  .reason{{color:#c9d1d9;font-size:.8rem;margin:12px 0 14px;padding:8px 12px;
-           background:#0d1117;border-left:3px solid #30363d;border-radius:0 4px 4px 0}}
-  .sim-wrap{{height:3px;background:#21262d;border-radius:2px;margin-bottom:14px}}
-  .sim-bar{{height:3px;border-radius:2px;background:#3fb950}}
-  .responses{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}}
-  @media(max-width:680px){{.responses{{grid-template-columns:1fr}}}}
-  .rbox{{background:#0d1117;border:1px solid #21262d;border-radius:6px;padding:10px 12px}}
-  .rlabel{{font-size:.7rem;color:#8b949e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}}
-  .rstatus{{font-size:1rem;font-weight:700;margin-bottom:3px}}
-  .rmeta{{font-size:.7rem;color:#8b949e;margin-bottom:8px}}
-  .rbody{{font-size:.7rem;color:#c9d1d9;white-space:pre-wrap;word-break:break-all;
-          max-height:200px;overflow-y:auto;border-top:1px solid #21262d;padding-top:8px}}
-  details.diff-detail summary{{color:#58a6ff;font-size:.75rem;padding:4px 0;list-style:none;cursor:pointer}}
-  details.diff-detail summary::-webkit-details-marker{{display:none}}
-  details.diff-detail summary::before{{content:"▶ "}}
-  details.diff-detail[open] summary::before{{content:"▼ "}}
-  .diff-block{{background:#0d1117;border:1px solid #21262d;border-radius:6px;
-               padding:10px 12px;margin-top:6px;font-size:.7rem;
-               white-space:pre;overflow-x:auto;max-height:280px;overflow-y:auto;line-height:1.5}}
-  .da{{color:#3fb950;display:block}} .dr{{color:#f85149;display:block}}
-  .dh{{color:#58a6ff;display:block}} .dc{{color:#6e7681;display:block}}
-  .empty{{color:#8b949e;font-size:.85rem;padding:24px;text-align:center}}
+  body{{font-family:monospace;max-width:1200px;margin:32px auto;padding:0 20px;color:#111;font-size:13px}}
+  h1{{font-size:1rem;margin-bottom:4px}}
+  .m{{color:#666;margin-bottom:6px}}
+  .counts{{display:flex;gap:20px;margin-bottom:18px;font-weight:bold}}
+  .crit{{color:#c00}} .high{{color:#b55000}} .med{{color:#00c}} .info{{color:#999;font-weight:normal}}
+  hr{{border:none;border-top:1px solid #ddd;margin:0}}
+  details{{border-bottom:1px solid #eee}}
+  details summary{{padding:7px 2px;cursor:pointer;display:flex;gap:10px;align-items:baseline;list-style:none;user-select:none}}
+  details summary::-webkit-details-marker{{display:none}}
+  details summary:hover{{background:#fafafa}}
+  .sev{{font-weight:bold;min-width:68px;font-size:.8rem}}
+  .fu{{flex:1;word-break:break-all}}
+  .fw{{color:#555}} .fs{{color:#999}}
+  .fb{{padding:8px 2px 14px}}
+  .reason{{color:#555;margin-bottom:10px}}
+  .pair{{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}}
+  @media(max-width:640px){{.pair{{grid-template-columns:1fr}}}}
+  .rbox{{background:#f8f8f8;border:1px solid #e0e0e0;padding:7px 9px}}
+  .rl{{color:#888;font-size:.7rem;text-transform:uppercase;margin-bottom:3px}}
+  .rs{{font-weight:bold;margin-bottom:2px}}
+  .rm{{color:#888;font-size:.75rem;margin-bottom:5px}}
+  .rb{{white-space:pre-wrap;word-break:break-all;max-height:150px;overflow-y:auto;border-top:1px solid #e8e8e8;padding-top:5px;font-size:.8rem;color:#333}}
+  details.dd summary{{color:#555;padding:3px 0;list-style:none;cursor:pointer}}
+  details.dd summary::-webkit-details-marker{{display:none}}
+  details.dd summary::before{{content:"▶ "}} details.dd[open] summary::before{{content:"▼ "}}
+  pre{{background:#f8f8f8;border:1px solid #e0e0e0;padding:7px;overflow-x:auto;max-height:200px;overflow-y:auto;margin-top:4px;line-height:1.45;font-size:.8rem}}
+  .da{{color:#060}} .dr{{color:#c00}} .dh{{color:#55f}} .dc{{color:#aaa}}
 </style>
 </head>
 <body>
-<h1>Diffy &mdash; Diff Report</h1>
-<p class="meta">
-  <span>Generated: {timestamp}</span>
-  <span>URLs: {total_urls}</span>
-  <span>Baseline: <strong>{baseline}</strong></span>
-  <span>Sessions: {sessions}</span>
-</p>
-<div class="stats">
-  <div class="stat"><div class="stat-label">Critical</div><div class="stat-value crit">{n_crit}</div></div>
-  <div class="stat"><div class="stat-label">High</div><div class="stat-value high">{n_high}</div></div>
-  <div class="stat"><div class="stat-label">Medium</div><div class="stat-value med">{n_med}</div></div>
-  <div class="stat"><div class="stat-label">Info</div><div class="stat-value info">{n_info}</div></div>
+<h1>Diffy &mdash; Diff</h1>
+<p class="m">{timestamp} &middot; baseline: <b>{baseline}</b> &middot; sessions: {sessions} &middot; {total_urls} URLs</p>
+<div class="counts">
+  <span class="crit">CRITICAL {n_crit}</span>
+  <span class="high">HIGH {n_high}</span>
+  <span class="med">MEDIUM {n_med}</span>
+  <span class="info">INFO {n_info}</span>
 </div>
-<p class="section-title">Findings</p>
-<div id="findings">
+<hr>
 {findings_html}
-</div>
 </body>
 </html>
 """
@@ -651,46 +599,36 @@ def _esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _status_cls(code: int) -> str:
-    if code == 0:
-        return "info"
-    if 200 <= code < 300:
-        return "ok"
-    if 400 <= code < 500:
-        return "info"
-    return "high"
-
-
 def _render_diff_block(diff_lines: List[str]) -> str:
     parts: List[str] = []
     for line in diff_lines:
         e = _esc(line.rstrip("\n"))
         if line.startswith("+") and not line.startswith("+++"):
-            parts.append(f'<span class="da">{e}</span>')
+            parts.append(f'<span class="da">{e}</span>\n')
         elif line.startswith("-") and not line.startswith("---"):
-            parts.append(f'<span class="dr">{e}</span>')
+            parts.append(f'<span class="dr">{e}</span>\n')
         elif line.startswith("@@"):
-            parts.append(f'<span class="dh">{e}</span>')
+            parts.append(f'<span class="dh">{e}</span>\n')
         else:
-            parts.append(f'<span class="dc">{e}</span>')
+            parts.append(f'<span class="dc">{e}</span>\n')
     return "".join(parts)
 
 
 def _render_resp(label: str, r: HttpResponse) -> str:
     if r.error:
-        status_html = f'<div class="rstatus info">ERR</div>'
-        body_html = f'<div class="rbody">{_esc(r.error)}</div>'
+        status = "ERR"
+        meta = _esc(r.error[:80])
+        body = ""
     else:
-        sc = _status_cls(r.status)
-        status_html = f'<div class="rstatus {sc}">{r.status}</div>'
-        body_html = f'<div class="rbody">{_esc(r.body[:1500])}</div>'
-    meta = f'{_esc(r.content_type[:50] or "—")} &bull; {r.size}B &bull; {r.elapsed_ms}ms'
+        status = str(r.status)
+        meta = f'{_esc(r.content_type[:40] or "—")} &middot; {r.size}B &middot; {r.elapsed_ms}ms'
+        body = f'<div class="rb">{_esc(r.body[:1200])}</div>'
     return (
         f'<div class="rbox">'
-        f'<div class="rlabel">{_esc(label)}</div>'
-        f'{status_html}'
-        f'<div class="rmeta">{meta}</div>'
-        f'{body_html}'
+        f'<div class="rl">{_esc(label)}</div>'
+        f'<div class="rs">{status}</div>'
+        f'<div class="rm">{meta}</div>'
+        f'{body}'
         f'</div>'
     )
 
@@ -698,37 +636,32 @@ def _render_resp(label: str, r: HttpResponse) -> str:
 def _render_finding(f: Finding) -> str:
     sim_pct = int(f.similarity * 100)
     open_attr = " open" if f.severity != "INFO" else ""
+    sev_cls = {"CRITICAL": "crit", "HIGH": "high", "MEDIUM": "med"}.get(f.severity, "info")
 
-    diff_section = ""
+    diff_html = ""
     if f.json_diffs:
-        body = _esc("\n".join(f.json_diffs))
-        diff_section = (
-            f'<details class="diff-detail"><summary>JSON structural diff '
-            f'({len(f.json_diffs)} difference(s))</summary>'
-            f'<div class="diff-block">{body}</div></details>'
+        diff_html = (
+            f'<details class="dd"><summary>JSON diff ({len(f.json_diffs)})</summary>'
+            f'<pre>{_esc(chr(10).join(f.json_diffs))}</pre></details>'
         )
     elif f.diff_lines:
-        body = _render_diff_block(f.diff_lines)
-        diff_section = (
-            f'<details class="diff-detail"><summary>Unified diff</summary>'
-            f'<div class="diff-block">{body}</div></details>'
+        diff_html = (
+            f'<details class="dd"><summary>Unified diff</summary>'
+            f'<pre>{_render_diff_block(f.diff_lines)}</pre></details>'
         )
 
     return (
-        f'<details class="finding"{open_attr}>'
+        f'<details{open_attr}>'
         f'<summary>'
-        f'<span class="badge badge-{f.severity}">{f.severity}</span>'
-        f'<span class="f-url">{_esc(f.url)}</span>'
-        f'<span class="f-meta">{_esc(f.baseline)} &rarr; {_esc(f.test)} &bull; {sim_pct}% similar</span>'
+        f'<span class="sev {sev_cls}">{f.severity}</span>'
+        f'<span class="fu">{_esc(f.url)}</span>'
+        f'<span class="fw">{_esc(f.baseline)} &rarr; {_esc(f.test)}</span>'
+        f'<span class="fs">{sim_pct}%</span>'
         f'</summary>'
-        f'<div class="f-body">'
+        f'<div class="fb">'
         f'<div class="reason">{_esc(f.reason)}</div>'
-        f'<div class="sim-wrap"><div class="sim-bar" style="width:{sim_pct}%"></div></div>'
-        f'<div class="responses">'
-        f'{_render_resp(f.baseline, f.baseline_resp)}'
-        f'{_render_resp(f.test, f.test_resp)}'
-        f'</div>'
-        f'{diff_section}'
+        f'<div class="pair">{_render_resp(f.baseline, f.baseline_resp)}{_render_resp(f.test, f.test_resp)}</div>'
+        f'{diff_html}'
         f'</div>'
         f'</details>'
     )
@@ -749,7 +682,7 @@ def build_diff_report(
     findings_html = (
         "\n".join(_render_finding(f) for f in sorted_f)
         if sorted_f
-        else '<p class="empty">No findings.</p>'
+        else "<p>No findings.</p>"
     )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
