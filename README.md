@@ -153,6 +153,39 @@ CRITICAL/HIGH/MEDIUM findings are expanded by default. INFO is collapsed.
 
 ---
 
+## Demo
+
+A self-contained demo environment lives in `demo/` with an intentionally vulnerable Flask app and a screenshot generator.
+
+```bash
+pip install -r requirements.txt
+pip install -r demo/requirements.txt
+```
+
+**Test `scan`** — generate near-duplicate screenshots and dedup them:
+
+```bash
+python demo/gen_screenshots.py
+python diffy.py scan demo/screenshots/ --output demo/scan_report.html
+```
+
+**Test `diff`** — start the demo app in one terminal, run the diff in another:
+
+```bash
+# Terminal 1
+python demo/app.py
+
+# Terminal 2
+python diffy.py diff demo/urls.txt \
+  --sessions-file demo/sessions.json \
+  --baseline admin \
+  --output demo/diff_report.html
+```
+
+See [`demo/README.md`](demo/README.md) for the full expected findings breakdown.
+
+---
+
 ## RoE compliance
 
 - Zero outbound calls beyond the target URLs you supply.
