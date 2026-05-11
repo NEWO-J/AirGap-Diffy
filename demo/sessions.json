@@ -1,0 +1,6 @@
+{
+  "admin": { "Cookie": "session=admin-token-demo" },
+  "alice": { "Cookie": "session=alice-token-demo" },
+  "bob":   { "Cookie": "session=bob-token-demo"   },
+  "anon":  {}
+}

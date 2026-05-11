@@ -1,0 +1,28 @@
+# diffy demo — target URL list
+# Usage: python diffy.py diff demo/urls.txt --sessions-file demo/sessions.json --baseline admin
+
+# IDOR — no auth check, expect CRITICAL (anon) and HIGH (cross-user)
+http://localhost:5000/api/users/1
+http://localhost:5000/api/users/2
+
+# BOLA — auth required but no ownership check, expect HIGH
+http://localhost:5000/api/orders/101
+http://localhost:5000/api/orders/102
+http://localhost:5000/api/orders/103
+
+# Broken access control — admin route with no enforcement, expect CRITICAL
+http://localhost:5000/api/admin/users
+
+# Secure — ownership enforced, expect INFO (correctly 403'd)
+http://localhost:5000/api/documents/201
+http://localhost:5000/api/documents/202
+
+# Secure — role enforced, expect INFO (correctly 403'd)
+http://localhost:5000/api/admin/audit-log
+
+# False positive demo — /me returns each user's own data (same structure, different values)
+# Diffy will flag HIGH due to body similarity. Requires human triage to dismiss.
+http://localhost:5000/api/me
+
+# Public — all sessions identical, expect INFO
+http://localhost:5000/health
