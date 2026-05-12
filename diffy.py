@@ -279,10 +279,16 @@ def cmd_scan(args: argparse.Namespace) -> None:
         print(f"  Failed    : {len(failed)}")
     print(f"  Saved     : {pct}%")
     print(f"  Elapsed   : {elapsed:.2f}s")
-    print(f"  Report -> {args.output}")
     if not args.no_manifest:
         print(f"  Cache  -> {args.manifest}")
-    print()
+
+    report_url = f"http://localhost:{args.serve_port}/{args.output.name}"
+    if not args.no_serve:
+        print(f"\n  Serving on {_hyperlink(report_url, report_url)}")
+        print(f"  Ctrl+C to stop\n")
+        _serve_report(args.output, args.serve_port)
+    else:
+        print(f"  Report -> {args.output}\n")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -876,6 +882,10 @@ sessions.json format:
                     metavar="PATH", help="Output HTML path")
     sp.add_argument("--extensions", nargs="+", default=["png", "jpg", "jpeg"],
                     metavar="EXT", help="File extensions to process")
+    sp.add_argument("--no-serve", action="store_true",
+                    help="Skip auto-hosting the report (just write the file)")
+    sp.add_argument("--serve-port", type=int, default=7771, metavar="PORT",
+                    help="Port to serve the report on (default: 7771)")
 
     # ── diff ──────────────────────────────────────────────────────────────────
     dp = sub.add_parser("diff", help="HTTP differential access-control testing (IDOR/BOLA)")
