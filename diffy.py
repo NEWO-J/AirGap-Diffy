@@ -781,7 +781,6 @@ def cmd_diff(args: argparse.Namespace) -> None:
             ): url
             for url in urls
         }
-        alerts: List[str] = []
         errors: List[str] = []
         with tqdm(total=len(urls), desc="  Testing  ", unit="url", ncols=68,
                   bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]") as bar:
@@ -789,20 +788,12 @@ def cmd_diff(args: argparse.Namespace) -> None:
                 try:
                     findings = fut.result()
                     all_findings.extend(findings)
-                    for f in findings:
-                        if f.severity in ("CRITICAL", "HIGH"):
-                            alerts.append(f"  [!] {f.severity:<8} {f.test} → {f.url}")
                 except Exception as exc:
                     errors.append(f"  [ERR] {exc}")
                 bar.update(1)
 
-    print()
-    for line in alerts:
-        print(line)
     for line in errors:
         print(line)
-    if alerts or errors:
-        print()
 
     print("[*] Building diff report…")
     build_diff_report(
