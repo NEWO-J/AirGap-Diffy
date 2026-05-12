@@ -578,6 +578,7 @@ _DIFF_HTML = """\
   .rs{{font-weight:bold;margin-bottom:2px}}
   .rm{{color:#888;font-size:.75rem;margin-bottom:5px}}
   .rb{{white-space:pre-wrap;word-break:break-all;max-height:150px;overflow-y:auto;border-top:1px solid #e8e8e8;padding-top:5px;font-size:.8rem;color:#333}}
+  .hi-eq{{background:#d4edda}} .hi-del{{background:#f8d7da}} .hi-ins{{background:#d4edda}}
   details.dd summary{{color:#555;padding:3px 0;list-style:none;cursor:pointer}}
   details.dd summary::-webkit-details-marker{{display:none}}
   details.dd summary::before{{content:"▶ "}} details.dd[open] summary::before{{content:"▼ "}}
@@ -605,6 +606,27 @@ def _esc(s: str) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
+def _inline_diff_html(a: str, b: str) -> Tuple[str, str]:
+    """Return HTML for both bodies with matching spans green and differing spans red."""
+    a, b = a[:1500], b[:1500]
+    matcher = difflib.SequenceMatcher(None, a, b, autojunk=False)
+    a_parts: List[str] = []
+    b_parts: List[str] = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        ea, eb = _esc(a[i1:i2]), _esc(b[j1:j2])
+        if tag == "equal":
+            a_parts.append(f'<span class="hi-eq">{ea}</span>')
+            b_parts.append(f'<span class="hi-eq">{eb}</span>')
+        elif tag == "replace":
+            a_parts.append(f'<span class="hi-del">{ea}</span>')
+            b_parts.append(f'<span class="hi-del">{eb}</span>')
+        elif tag == "delete":
+            a_parts.append(f'<span class="hi-del">{ea}</span>')
+        elif tag == "insert":
+            b_parts.append(f'<span class="hi-del">{eb}</span>')
+    return "".join(a_parts), "".join(b_parts)
+
+
 def _render_diff_block(diff_lines: List[str]) -> str:
     parts: List[str] = []
     for line in diff_lines:
@@ -620,7 +642,7 @@ def _render_diff_block(diff_lines: List[str]) -> str:
     return "".join(parts)
 
 
-def _render_resp(label: str, r: HttpResponse) -> str:
+def _render_resp(label: str, r: HttpResponse, body_html: str = "") -> str:
     if r.error:
         status = "ERR"
         meta = _esc(r.error[:80])
@@ -628,7 +650,8 @@ def _render_resp(label: str, r: HttpResponse) -> str:
     else:
         status = str(r.status)
         meta = f'{_esc(r.content_type[:40] or "—")} &middot; {r.size}B &middot; {r.elapsed_ms}ms'
-        body = f'<div class="rb">{_esc(r.body[:1200])}</div>'
+        content = body_html if body_html else _esc(r.body[:1500])
+        body = f'<div class="rb">{content}</div>'
     return (
         f'<div class="rbox">'
         f'<div class="rl">{_esc(label)}</div>'
@@ -643,6 +666,10 @@ def _render_finding(f: Finding) -> str:
     sim_pct = int(f.similarity * 100)
     open_attr = " open" if f.severity != "INFO" else ""
     sev_cls = {"CRITICAL": "crit", "HIGH": "high", "MEDIUM": "med"}.get(f.severity, "info")
+
+    bl_html, ts_html = "", ""
+    if not f.baseline_resp.error and not f.test_resp.error:
+        bl_html, ts_html = _inline_diff_html(f.baseline_resp.body, f.test_resp.body)
 
     diff_html = ""
     if f.json_diffs:
@@ -666,7 +693,7 @@ def _render_finding(f: Finding) -> str:
         f'</summary>'
         f'<div class="fb">'
         f'<div class="reason">{_esc(f.reason)}</div>'
-        f'<div class="pair">{_render_resp(f.baseline, f.baseline_resp)}{_render_resp(f.test, f.test_resp)}</div>'
+        f'<div class="pair">{_render_resp(f.baseline, f.baseline_resp, bl_html)}{_render_resp(f.test, f.test_resp, ts_html)}</div>'
         f'{diff_html}'
         f'</div>'
         f'</details>'
